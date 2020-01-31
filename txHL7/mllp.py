@@ -19,7 +19,6 @@ class MinimalLowerLayerProtocol(protocol.Protocol, TimeoutMixin):
     .. [1] http://www.hl7standards.com/blog/2007/05/02/hl7-mlp-minimum-layer-protocol-defined/
     .. [2] http://www.hl7standards.com/blog/2007/02/01/ack-message-original-mode-acknowledgement/
     """
-
     _buffer = b''
     start_block = b'\x0b'  # <VT>, vertical tab
     end_block = b'\x1c'  # <FS>, file separator
@@ -52,6 +51,8 @@ class MinimalLowerLayerProtocol(protocol.Protocol, TimeoutMixin):
                 raw_message = self.factory.decode(raw_message)
 
                 message_container = self.factory.parseMessage(raw_message)
+                
+                
 
                 # error callback (defined here, since error depends on
                 # current message).  rejects the message
@@ -60,6 +61,12 @@ class MinimalLowerLayerProtocol(protocol.Protocol, TimeoutMixin):
                     self.writeMessage(reject)
                     return err
 
+                # embed meta data for the connection in the message container
+                meta = {'host' : self.transport.getHost(),
+                        'peer' : self.transport.getPeer()
+                        }
+                message_container.meta = meta
+                
                 # have the factory create a deferred and pass the message
                 # to the approriate IHL7Receiver instance
                 d = self.factory.handleMessage(message_container)
